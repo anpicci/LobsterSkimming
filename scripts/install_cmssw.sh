@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# Usage: ./install_cmssw.sh install-dir cmssw-version
+
+function setup_cmssw {
+    dir=$1
+    cmssw_ver=$2
+
+    cd ${dir}
+
+    if [[ "${CMSSW_BASE}" != "" ]]; then
+        echo "Already in a CMSSW release! Must start from a fresh environment, exiting now"
+        return 1
+    fi
+
+    cvmfs_dir=/cvmfs/cms.cern.ch
+
+    echo "dir: ${dir}"
+    echo "cmssw_release: ${cmssw_ver}"
+
+    if [ -d ${cvmfs_dir} ]; then
+        echo "Found CVMFS!"
+        # Makes cmsrel available to the environment
+        source ${cvmfs_dir}/cmsset_default.sh
+    else
+        echo "Couldn't find CVMFS directory, exiting now"
+        return 1
+    fi
+
+    cmsrel ${cmssw_ver}
+
+    cd ${cmssw_ver}/src
+    git clone https://github.com/cms-nanoAOD/nanoAOD-tools.git PhysicsTools/NanoAODTools
+    cd PhysicsTools/NanoAODTools
+    cmsenv
+    scram b
+}
+
+setup_cmssw $1 $2
