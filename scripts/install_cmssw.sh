@@ -27,13 +27,17 @@ function setup_cmssw {
         return 1
     fi
 
-    cmsrel ${cmssw_ver}
+    export SCRAM_ARCH=$3
+
+    echo "Setting up ${cmssw_ver}"
+    scram p CMSSW ${cmssw_ver}
 
     cd ${cmssw_ver}/src
     git clone https://github.com/cms-nanoAOD/nanoAOD-tools.git PhysicsTools/NanoAODTools
     cd PhysicsTools/NanoAODTools
-    cmsenv
+    echo "Getting CMS ENV from ${PWD}"
+    eval $(scramv1 runtime -sh)
     scram b
 }
 
-setup_cmssw $1 $2
+setup_cmssw $1 $2 $3

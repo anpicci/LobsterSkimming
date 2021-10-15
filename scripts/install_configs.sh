@@ -49,15 +49,19 @@ function git_sparse_checkout {
 
 
     mkdir -p "${dir}"
-    git -C "${dir}" init
-    git -C "${dir}" config core.sparseCheckout ${sparse}
+    cd "${dir}"
+    git init
+    git config core.sparseCheckout ${sparse}
     for path in $* ;do
         echo "Getting ${path}"
         echo "${path}" >> ${dir}/.git/info/sparse-checkout
     done
-    git -C "${dir}" remote add origin ${url}
-    git -C "${dir}" fetch ${opts} origin ${tag}
-    git -C "${dir}" checkout ${tag}
+    echo "Adding remote url"
+    git remote add origin ${url}
+    echo "Fetching"
+    git fetch origin
+    echo "Checking out tag"
+    git checkout ${tag}
 }
 
 # Installs the topcoffea "cfg" and "json" directories
