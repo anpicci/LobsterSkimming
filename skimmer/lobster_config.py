@@ -7,6 +7,7 @@ import subprocess
 from lobster import cmssw
 from lobster.core import AdvancedOptions, Category, Config, Dataset, ParentDataset, StorageConfiguration, Workflow
 
+sys.path.append(os.getcwd())
 from tools.utils import regex_match, read_cfg
 
 
@@ -31,24 +32,24 @@ skim_cut = "nMuon+nElectron >=2 && Sum\\$( Muon_looseId && Muon_miniPFRelIso_all
 master_label = 'EFT_{step}_{tstamp}'.format(step=step,tstamp=TSTAMP)
 workdir_path = "{path}/{step}/{tag}/{ver}".format(step=step,tag=tag,ver=ver,path="/tmpscratch/users/$USER")
 plotdir_path = "{path}/{step}/{tag}/{ver}".format(step=step,tag=tag,ver=ver,path="~/www/lobster")
-output_path  = "{path}/{step}/{tag}/{ver}".format(step=step,tag=tag,ver=ver,step,path="/store/user/$USER")
+output_path  = "{path}/{step}/{tag}/{ver}".format(step=step,tag=tag,ver=ver,path="/store/user/$USER")
 
 if testing:
     workdir_path = "{path}/{step}/test/lobster_test_{tstamp}".format(step=step,tstamp=TSTAMP,path="/tmpscratch/users/$USER")
     plotdir_path = "{path}/{step}/test/lobster_test_{tstamp}".format(step=step,tstamp=TSTAMP,path="~/www/lobster")
-    output_path  = "{path}/{step}/test/lobster_test_{tstamp}".format(step=step,tstamp=TSTAMP,step,path="/store/user/$USER")
+    output_path  = "{path}/{step}/test/lobster_test_{tstamp}".format(step=step,tstamp=TSTAMP,path="/store/user/$USER")
 
-# Note: I don't think this actually matters, since I believe it gets overwritten by lobster at some point
-#   but it might matter for the output redirector to use
-xrd_hostname = "deepthought.crc.nd.edu"
+# Turns out it might matter
+xrd_src = "ndcms.crc.nd.edu"
+xrd_dst = "deepthought.crc.nd.edu"
 
 storage = StorageConfiguration(
     input=[
-        "root://{host}/".format(host=xrd_hostname)  # Note the extra slash after the hostname
+        "root://{host}/".format(host=xrd_src)  # Note the extra slash after the hostname
     ],
     output=[
         "hdfs://eddie.crc.nd.edu:19000",
-        "root://{host}/".format(host=xrd_hostname),    # Note the extra slash after the hostname
+        "root://{host}/".format(host=xrd_dst),    # Note the extra slash after the hostname
     ]
 )
 
@@ -66,14 +67,14 @@ cat = Category(
 wf = []
 for sample in cfg['jsons']:
     jsn = cfg['jsons'][sample]
-    
+    sample = sample.replace('-','_')
     print "Sample: {}".format(sample)
     for fn in jsn['files']:
         print "\t{}".format(fn)
 
     cmd = ['nano_postproc.py','--cut={}'.format(skim_cut),'--postfix=_Skim','.','@inputfiles']
     skim_wf = Workflow(
-        label='{sample}'.format(sample),
+        label='{sample}'.format(sample=sample),
         sandbox=cmssw.Sandbox(release=sandbox_location),
         dataset=Dataset(
             files=jsn['files'],
@@ -93,6 +94,7 @@ config = Config(
     storage=storage,
     workflows=wf,
     advanced=AdvancedOptions(
+        dashboard=False,
         bad_exit_codes=[127, 160],
         log_level=1,
         payload=10,
