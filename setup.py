@@ -12,7 +12,7 @@ def main():
     abs_path = subprocess.check_output(["git","rev-parse","--show-toplevel"])
     abs_path = abs_path.strip()
 
-    cmssw_release = "CMSSW_11_1_0"
+    cmssw_release = "CMSSW_9_4_6"
     scram_arch = "slc7_amd64_gcc700"
 
 
