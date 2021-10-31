@@ -7,8 +7,8 @@ import subprocess
 from lobster import cmssw
 from lobster.core import AdvancedOptions, Category, Config, Dataset, ParentDataset, StorageConfiguration, Workflow
 
-sys.path.append(os.getcwd())
-from tools.utils import regex_match, read_cfg
+sys.path.append(os.path.split(__file__)[0])
+from tools.utils import read_cfg
 
 
 TSTAMP = datetime.datetime.now().strftime('%Y%m%d_%H%M')
@@ -54,7 +54,6 @@ storage = StorageConfiguration(
     disable_input_streaming=True,
 )
 
-
 # See tools/utils.py for dict structure of returned object
 cfg = read_cfg(cfg_fpath)
 
@@ -66,7 +65,7 @@ cat = Category(
 )
 
 wf = []
-for sample in cfg['jsons']:
+for sample in sorted(cfg['jsons']):
     jsn = cfg['jsons'][sample]
     print "Sample: {}".format(sample)
     for fn in jsn['files']:
