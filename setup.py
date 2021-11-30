@@ -12,7 +12,7 @@ def main():
     abs_path = subprocess.check_output(["git","rev-parse","--show-toplevel"])
     abs_path = abs_path.strip()
 
-    cmssw_release = "CMSSW_9_4_6"
+    cmssw_release = "CMSSW_10_6_19_patch2"
     scram_arch = "slc7_amd64_gcc700"
 
 
@@ -34,6 +34,5 @@ def main():
         print "Setting up CMSSW release and getting NanoAODTools"
         subprocess.check_call(["./scripts/install_cmssw.sh",abs_path,cmssw_release,scram_arch])
 
-    print "\nDone!\nMake sure to do a cmsenv in {}/{}/src or other compatible CMSSW release before activating and/or using lobster!".format(abs_path,cmssw_release)
-
+    print "\nDone!\nMake sure to do a cmsenv before activating and/or using lobster!"
 main()
