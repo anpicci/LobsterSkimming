@@ -30,7 +30,7 @@ def load_json_file(fpath):
         jsn['files'][i] = fn
     return jsn
 
-def read_cfg(fpath):
+def read_cfg(fpath,match=[]):
     cfg_dir,fname = os.path.split(fpath)
     if not cfg_dir:
         raise RuntimeError("No cfg directory in {fpath}".format(fpath=fpath))
@@ -49,8 +49,10 @@ def read_cfg(fpath):
             if l.startswith("root:"):
                 cfg['src_xrd'] = l
             else:
+                if len(regex_match([l],regex_lst=match)) == 0: continue
                 sample = os.path.basename(l)
                 sample = sample.replace(".json","")
+
                 full_path = pjoin(cfg['cfg_dir'],l)
                 jsn = load_json_file(full_path)
                 cfg['jsons'][sample] = jsn
