@@ -11,7 +11,9 @@ if len(infiles) != 1:
 
 fname = infiles[0]
 
-subprocess.check_call(['nano_postproc.py','--cut={}'.format(skim_cut),output_dir,fname])
+cmd_args = ['nano_postproc.py','-c','{}'.format(skim_cut),output_dir,fname]
+print("Skim Command:"," ".join(cmd_args))
+subprocess.check_call(cmd_args)
 
 out_fn = fname.replace(".root","_Skim.root")
 
