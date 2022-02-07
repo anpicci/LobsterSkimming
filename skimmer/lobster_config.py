@@ -22,8 +22,8 @@ sandbox_location = os.path.join(top_dir,"CMSSW_10_6_19_patch2")
 testing = False
 
 step = "skims"
-tag = "data/NanoAOD_ULv8_UL2016/{}".format(TSTAMP2)    # Not used if in "testing" mode
-#tag = "private_sgnl/FullRun2/{}".format(TSTAMP2)    # Not used if in "testing" mode
+tag = "data/NanoAOD_ULv9/UL2016/Full"               # Not used if in "testing" mode
+# tag = "private_sgnl/FullRun2/{}".format(TSTAMP2)  # Not used if in "testing" mode
 ver = "v1"
 
 cfg_name = "data_samples.cfg"
@@ -79,12 +79,25 @@ for sample in sorted(cfg['jsons']):
     print "Sample: {}".format(sample)
     for fn in jsn['files']:
         print "\t{}".format(fn)
-    cmd = ['python','skim_wrapper.py','{}'.format(skim_cut),'.','@inputfiles']
+    files = [x.replace('/store/','') for x in jsn['files']]
+    module_name = ''
+    if 'HIPM_UL2016' in sample:
+        module_name = 'lepMVA_2016_preVFP'
+    elif 'UL2017' in sample:
+        module_name = 'lepMVA_2017'
+    elif 'UL2018' in sample:
+        module_name = 'lepMVA_2018'
+    else:
+        module_name = 'lepMVA_2016'
+    cmd = ['python','skim_wrapper.py']
+    cmd.extend(['--cut',skim_cut])
+    cmd.extend(['--module',module_name])
+    cmd.extend(['.','@inputfiles'])
     skim_wf = Workflow(
         label=sample.replace('-','_'),
         sandbox=cmssw.Sandbox(release=sandbox_location),
         dataset=Dataset(
-            files=[x.replace('/store/','') for x in jsn['files']],
+            files=files,
             files_per_task=1
         ),
         category=cat,
