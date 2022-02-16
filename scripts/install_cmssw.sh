@@ -33,7 +33,7 @@ function setup_cmssw {
     scram p CMSSW ${cmssw_ver}
 
     cd ${cmssw_ver}/src
-    git clone git@github.com:sscruz/cmgtools-lite.git -b 104X_dev_nano_UL CMGTools
+    git clone git@github.com:sscruz/cmgtools-lite.git -b 104X_dev_nano_lepMVA CMGTools
     git clone https://github.com/cms-nanoAOD/nanoAOD-tools.git PhysicsTools/NanoAODTools
     echo "Getting CMS ENV from ${PWD}"
     eval $(scramv1 runtime -sh)
