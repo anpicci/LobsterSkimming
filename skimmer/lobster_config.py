@@ -18,23 +18,26 @@ top_dir = subprocess.check_output(["git","rev-parse","--show-toplevel"])
 top_dir = top_dir.strip()
 
 sandbox_location = os.path.join(top_dir,"CMSSW_10_6_19_patch2")
+print(sandbox_location)
 
 testing = True
+#testing = False
 
 step = "skims"
 tag = "data/NAOD_ULv9_new-lepMVA/UL2018/Full"               # Not used if in "testing" mode
 ver = "v1"
 
-cfg_name = "data_samples.cfg"
-#cfg_name = "mc_signal_samples.cfg"
+#cfg_name = "mc_background_samples.cfg"
+cfg_name = "mc_signal_samples.cfg"
+#cfg_name = "data_samples.cfg"
 cfg_fpath = os.path.join(top_dir,"topcoffea/topcoffea/cfg",cfg_name)
-
+print(cfg_fpath)
 # Only process json files that match these regexs (empty list matches everything)
-match = ['.*UL2018\\.json']
+match = []
 # match = ['DoubleEG_F-UL2016\\.json']
 # match = ['MuonEG_B-UL2017\\.json']
 
-skim_cut = "'nMuon+nElectron >=2 && Sum$( Muon_looseId && Muon_miniPFRelIso_all < 0.4 && Muon_sip3d <8) + Sum$(Electron_miniPFRelIso_all < 0.4 && Electron_sip3d <8 && Electron_mvaFall17V2noIso_WPL) >=2'"
+skim_cut = "'nMuon+nElectron >=1 && Sum$( Muon_looseId && Muon_miniPFRelIso_all < 0.4 && Muon_sip3d <8) + Sum$(Electron_miniPFRelIso_all < 0.4 && Electron_sip3d <8 && Electron_mvaFall17V2noIso_WPL) >=1'"
 
 master_label = 'EFT_{step}_{tstamp}'.format(step=step,tstamp=TSTAMP1)
 workdir_path = "{path}/{step}/{tag}/{ver}".format(step=step,tag=tag,ver=ver,path="/tmpscratch/users/$USER")
@@ -47,15 +50,17 @@ if testing:
     output_path  = "{path}/{step}/test/lobster_test_{tstamp}".format(step=step,tstamp=TSTAMP1,path="/store/user/$USER")
 
 # Different xrd src redirectors depending on where the inputs are stored
-xrd_src = "ndcms.crc.nd.edu"            # Use this for accessing samples from the GRID
+#xrd_src = "ndcms.crc.nd.edu"            # Use this for accessing samples from the GRID
 #xrd_src = "cmsxrootd.fnal.gov"          # Only use this if the ND XCache is giving troubles
-#xrd_src = "deepthought.crc.nd.edu"      # Use this for accessing samples from ND T3
+xrd_src = "deepthought.crc.nd.edu"      # Use this for accessing samples from ND T3
 
 xrd_dst = "deepthought.crc.nd.edu"
-
+#print("HERE!!!")
+#print("root://{host}//store/".format(host=xrd_src))
 storage_base = StorageConfiguration(
     input=[
         "root://{host}//store/".format(host=xrd_src)  # Note the extra slash after the hostname
+        #"root://deepthought.crc.nd.edu/"
     ],
     output=[
         "hdfs://eddie.crc.nd.edu:19000{path}".format(path=output_path),
@@ -73,7 +78,7 @@ storage_cmssw = StorageConfiguration(
     disable_input_streaming=True,
 )
 
-storage = storage_cmssw
+storage = storage_base
 
 # See tools/utils.py for dict structure of returned object
 cfg = read_cfg(cfg_fpath,match=match)
@@ -113,8 +118,7 @@ for sample in sorted(cfg['jsons']):
         file_based=True
     )
 
-    ds = ds_cmssw
-
+    ds = ds_base
     cmd = ['python','skim_wrapper.py']
     cmd.extend(['--cut',skim_cut])
     cmd.extend(['--module',module_name])
@@ -123,7 +127,7 @@ for sample in sorted(cfg['jsons']):
     skim_wf = Workflow(
         label=sample.replace('-','_'),
         sandbox=cmssw.Sandbox(release=sandbox_location),
-        dataset=ds_cmssw,
+        dataset=ds,
         category=cat,
         extra_inputs=['skim_wrapper.py',os.path.join(sandbox_location,'src/PhysicsTools/NanoAODTools/scripts/haddnano.py')],
         outputs=['output.root'],
@@ -147,9 +151,9 @@ config = Config(
         log_level=1,
         payload=10,
         xrootd_servers=[
-            'ndcms.crc.nd.edu',
+            #'ndcms.crc.nd.edu',
             # 'cmsxrootd.fnal.gov',
-            # 'deepthought.crc.nd.edu'
+             'deepthought.crc.nd.edu'
         ]
     )
 )

@@ -26,7 +26,8 @@ print "\n".join(s)
 # This is going to be our last resort...
 local_files = []
 for inf in infiles:
-    local_name = inf.rsplit("/")[-1]
+    #local_name = inf.rsplit("/")[-1]
+    local_name = inf.rsplit("/")[-1].replace("file:","")
     local_files.append(local_name)
     if local_name.replace("file:","") in os.listdir('.'):
         continue
