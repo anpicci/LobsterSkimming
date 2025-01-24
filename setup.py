@@ -16,16 +16,16 @@ def main():
     scram_arch = "el9_amd64_gcc12"
 
 
-    if os.path.exists("topcoffea"):
-        print("topcoffea directory already installed, skipping this part\n")
+    if os.path.exists("topeft"):
+        print("topeft directory already installed, skipping this part\n")
     else:
-        print("Installing topcoffea cfg and json directories")
-        topcoffea_url = "https://github.com/TopEFT/topcoffea.git"
+        print("Installing topeft cfg and json directories")
+        topeft_url = "https://github.com/TopEFT/topeft.git"
         tag = "master"
-        prj_head = "{}/topcoffea".format(abs_path)
-        cfg_dir  = "topcoffea/cfg"
-        json_dir = "topcoffea/json"
-        subprocess.check_call(["./scripts/install_configs.sh",topcoffea_url,prj_head,tag,cfg_dir,json_dir])
+        prj_head = "{}/topeft".format(abs_path)
+        cfg_dir  = "input_samples/cfgs"
+        json_dir = "input_samples/sample_jsons"
+        subprocess.check_call(["./scripts/install_configs.sh",topeft_url,prj_head,tag,cfg_dir,json_dir])
         print("")
 
     if os.path.exists(cmssw_release):
