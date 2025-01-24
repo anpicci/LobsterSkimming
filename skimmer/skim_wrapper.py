@@ -9,12 +9,14 @@ parser.add_argument('infiles', nargs='+', help='')
 parser.add_argument('--cut','-c',type=str, help='')
 parser.add_argument('--module','-m',type=str, help='')
 parser.add_argument('--out-dir','-o',type=str,default='.', help='')
+parser.add_argument('--nevents','-n',type=str,default=None, help='')
 
 args = parser.parse_args()
 skim_cut = args.cut
 module   = args.module
 out_dir  = args.out_dir
 infiles  = args.infiles
+nevents  = args.nevents
 
 indent = " "*4*2
 
@@ -45,9 +47,12 @@ to_skim = local_files
 
 cmd_args = ['nano_postproc.py']
 cmd_args.extend(['-c','{}'.format(skim_cut)])
-cmd_args.extend(['-I','CMGTools.TTHAnalysis.tools.nanoAOD.ttH_modules','lepJetBTagDeepFlav,{}'.format(module)])
+#cmd_args.extend(['-I','CMGTools.TTHAnalysis.tools.nanoAOD.ttH_modules','lepJetBTagDeepFlav,{}'.format(module)])
+cmd_args.extend(['-I','CMGTools.NanoProc.tools.nanoAOD.lepMVA_run3','{}'.format(module)])
 cmd_args.extend([out_dir])
 cmd_args.extend(to_skim)
+if nevents:
+    cmd_args.extend(['-n','{}'.format(nevents)])
 
 s = "Skim command: {}".format(" ".join(cmd_args))
 print s
@@ -66,7 +71,8 @@ print "\n".join(s)
 # Need to merge any skim outputs into a single file that lobster expects
 to_merge = [ x.rsplit("/")[-1].replace(".root","_Skim.root") for x in to_skim ]
 
-cmd_args = ['python','haddnano.py','output.root']
+#cmd_args = ['python','haddnano.py','output.root']
+cmd_args = ['haddnano.py','output.root']
 cmd_args.extend(to_merge)
 s = "Merge command: {}".format(" ".join(cmd_args))
 print s
