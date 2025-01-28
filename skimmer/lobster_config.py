@@ -19,7 +19,8 @@ top_dir = subprocess.check_output(["git","rev-parse","--show-toplevel"])
 top_dir = top_dir.strip()
 
 #sandbox_location = os.path.join(top_dir,"CMSSW_10_6_19_patch2")
-sandbox_location = "/afs/crc.nd.edu/user/a/apiccine/CMSSW_14_0_6"
+#sandbox_location = "/afs/crc.nd.edu/user/a/apiccine/CMSSW_14_0_6"
+sandbox_location = "/afs/crc.nd.edu/user/a/apiccine/Lobster-With-Conda/LobsterSkimming/CMSSW_14_0_6"
 
 testing = True
 
@@ -47,9 +48,9 @@ plotdir_path = "{path}/{step}/{tag}/{ver}".format(step=step,tag=tag,ver=ver,path
 output_path  = "{path}/{step}/{tag}/{ver}".format(step=step,tag=tag,ver=ver,path="/store/user/$USER")
 
 if testing:
-    workdir_path = "{path}/{step}/test/lobster_test_{tstamp}".format(step=step,tstamp=TSTAMP1,path="/tmpscratch/users/$USER")
-    plotdir_path = "{path}/{step}/test/lobster_test_{tstamp}".format(step=step,tstamp=TSTAMP1,path="~/www/lobster")
-    output_path  = "{path}/{step}/test/lobster_test_{tstamp}".format(step=step,tstamp=TSTAMP1,path="/store/user/$USER")
+    workdir_path = "{path}/{step}/test/lobster_skimtest_{tstamp}".format(step=step,tstamp=TSTAMP1,path="/tmpscratch/users/$USER")
+    plotdir_path = "{path}/{step}/test/lobster_skimtest_{tstamp}".format(step=step,tstamp=TSTAMP1,path="~/www/lobster")
+    output_path  = "{path}/{step}/test/lobster_skimtest_{tstamp}".format(step=step,tstamp=TSTAMP1,path="/store/user/$USER")
 
 # Different xrd src redirectors depending on where the inputs are stored
 #xrd_src = "ndcms.crc.nd.edu"            # Use this for accessing samples from the GRID
@@ -93,7 +94,7 @@ storage = storage_cmssw
 
 # See tools/utils.py for dict structure of returned object
 cfg = read_cfg(cfg_fpath,match=match)
-
+#print("cfg", cfg)
 cat = Category(
     name='processing',
     cores=1,
@@ -133,11 +134,14 @@ for sample in sorted(cfg['jsons']):
 
     ds = ds_cmssw
 
-    cmd = ['python','skim_wrapper.py']
+    cmd = ['python3','skim_wrapper.py']
     cmd.extend(['--cut',skim_cut])
     cmd.extend(['--module',module_name])
     cmd.extend(['--out-dir','.'])
     cmd.extend(['@inputfiles'])
+    print("\n\n\n")
+    print("Command to execute:", cmd)
+    print("\n\n\n")
     skim_wf = Workflow(
         label=sample.replace('-','_'),
         sandbox=cmssw.Sandbox(release=sandbox_location),
@@ -165,8 +169,8 @@ config = Config(
         log_level=1,
         payload=10,
 	osg_version='3.6',
-        threshold_for_failure=100,
-	threshold_for_skipping=100,
+        #threshold_for_failure=100,
+	#threshold_for_skipping=100,
     )
 )
     

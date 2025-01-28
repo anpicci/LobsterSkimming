@@ -36,7 +36,7 @@ function setup_cmssw {
     #git clone git@github.com:sscruz/cmgtools-lite.git -b 104X_dev_nano_lepMVA CMGTools
     #git clone https://github.com/jdelrieg/topEFT_ttHMVA_Run3.git -b newcmgtools_python3 CMGTools
     git clone https://github.com/apiccine/topEFT_ttHMVA_Run3.git -b nd_run3 CMGTools
-    git clone https://github.com/cms-nanoAOD/nanoAOD-tools.git PhysicsTools/NanoAODTools
+    #git clone https://github.com/cms-nanoAOD/nanoAOD-tools.git PhysicsTools/NanoAODTools
     echo "Getting CMS ENV from ${PWD}"
     eval $(scramv1 runtime -sh)
     scram b
