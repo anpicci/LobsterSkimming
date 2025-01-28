@@ -10,17 +10,14 @@ from lobster.core import AdvancedOptions, Category, Config, Dataset, ParentDatas
 sys.path.append(os.path.split(__file__)[0])
 from tools.utils import read_cfg
 
-
 TSTAMP1 = datetime.datetime.now().strftime('%Y%m%d_%H%M')
-TSTAMP2 = datetime.datetime.now().strftime('%Y_%m_%d')
 startingday = datetime.datetime.now().strftime('%y%m%d')
 
-top_dir = subprocess.check_output(["git","rev-parse","--show-toplevel"])
-top_dir = top_dir.strip()
+top_dir = subprocess.check_output(["git", "rev-parse", "--show-toplevel"]).decode("utf-8").strip()
+print(top_dir)
 
-#sandbox_location = os.path.join(top_dir,"CMSSW_10_6_19_patch2")
-#sandbox_location = "/afs/crc.nd.edu/user/a/apiccine/CMSSW_14_0_6"
-sandbox_location = "/afs/crc.nd.edu/user/a/apiccine/Lobster-With-Conda/LobsterSkimming/CMSSW_14_0_6"
+sandbox_location = os.path.join(top_dir,"CMSSW_14_0_6")
+#sandbox_location = "/afs/crc.nd.edu/user/a/apiccine/Lobster-With-Conda/LobsterSkimming/CMSSW_14_0_6"
 
 testing = True
 
@@ -31,23 +28,24 @@ ver = "v{}".format(startingday)
 
 cfg_name = "2022_data_samples.cfg"
 #cfg_name = "mc_signal_samples.cfg"
-#cfg_fpath = os.path.join(top_dir,"topcoffea/topcoffea/cfg",cfg_name)
+
 cfg_fpath = os.path.join(top_dir,"topeft/input_samples/cfgs",cfg_name)
 
 # Only process json files that match these regexs (empty list matches everything)
 #match = ['.*UL2018\\.json']
-match = ['.*22Sep2023\\.json']
+match = ['.*EGamma.*22Sep2023\\.json']
 # match = ['DoubleEG_F-UL2016\\.json']
 # match = ['MuonEG_B-UL2017\\.json']
 
 skim_cut = "'nMuon+nElectron >=2 && Sum$( Muon_looseId && Muon_miniPFRelIso_all < 0.4 && Muon_sip3d <8) + Sum$(Electron_miniPFRelIso_all < 0.4 && Electron_sip3d <8 && Electron_mvaFall17V2noIso_WPL) >=2'"
 
-master_label = '{step}EFT_{tstamp}'.format(step=step,tstamp=TSTAMP1)
+master_label = '{step}_{tstamp}'.format(step=step,tstamp=TSTAMP1)
 workdir_path = "{path}/{step}/{tag}/{ver}".format(step=step,tag=tag,ver=ver,path="/tmpscratch/users/$USER")
 plotdir_path = "{path}/{step}/{tag}/{ver}".format(step=step,tag=tag,ver=ver,path="~/www/lobster")
 output_path  = "{path}/{step}/{tag}/{ver}".format(step=step,tag=tag,ver=ver,path="/store/user/$USER")
 
 if testing:
+    master_label = '{step}_lobPY3_test_{tstamp}'.format(step=step,tstamp=TSTAMP1)
     workdir_path = "{path}/{step}/test/lobster_skimtest_{tstamp}".format(step=step,tstamp=TSTAMP1,path="/tmpscratch/users/$USER")
     plotdir_path = "{path}/{step}/test/lobster_skimtest_{tstamp}".format(step=step,tstamp=TSTAMP1,path="~/www/lobster")
     output_path  = "{path}/{step}/test/lobster_skimtest_{tstamp}".format(step=step,tstamp=TSTAMP1,path="/store/user/$USER")
@@ -55,38 +53,26 @@ if testing:
 # Different xrd src redirectors depending on where the inputs are stored
 #xrd_src = "ndcms.crc.nd.edu"            # Use this for accessing samples from the GRID
 #xrd_src = "cmsxrootd.fnal.gov"          # Only use this if the ND XCache is giving troubles
-#xrd_src = "deepthought.crc.nd.edu"      # Use this for accessing samples from ND T3
 xrd_src = "hactar01.crc.nd.edu"      # Use this for accessing samples from ND T3
-
-#xrd_dst = "deepthought.crc.nd.edu"
-xrd_src = "hactar01.crc.nd.edu"
+xrd_dst = "hactar01.crc.nd.edu"
 
 storage_base = StorageConfiguration(
     input=[
-        #"root://{host}//store/".format(host=xrd_src)  # Note the extra slash after the hostname
         "root://{host}//".format(host=xrd_src)  # Note the extra slash after the hostname
     ],
     output=[
-        "file:///cms/cephfs/data" + output_path,
-        "root://hactar01.crc.nd.edu/" + output_path,
-    ]
-    #output=[
-    #    "hdfs://eddie.crc.nd.edu:19000{path}".format(path=output_path),
-    #    "root://{host}/{path}".format(host=xrd_dst,path=output_path),    # Note the extra slash after the hostname
-    #],
+        f"file:///cms/cephfs/data/{output_path}",
+        f"root://{xrd_dst}/{output_path}",
+    ],
     #disable_input_streaming=True,
 )
 
 
 storage_cmssw = StorageConfiguration(
     output=[
-        "file:///cms/cephfs/data" + output_path,
-        "root://hactar01.crc.nd.edu/" + output_path,
-    ]
-    #output = [
-    #    "hdfs://eddie.crc.nd.edu:19000{path}".format(path=output_path),
-    #    "root://{host}/{path}".format(host=xrd_dst,path=output_path),
-    #],
+        f"file:///cms/cephfs/data/{output_path}",
+        f"root://{xrd_dst}/{output_path}",
+    ],
     #disable_input_streaming=True,
 )
 
@@ -105,9 +91,9 @@ cat = Category(
 wf = []
 for sample in sorted(cfg['jsons']):
     jsn = cfg['jsons'][sample]
-    print "Sample: {}".format(sample)
+    print(("Sample: {}".format(sample)))
     for fn in jsn['files']:
-        print "\t{}".format(fn)
+        print(("\t{}".format(fn)))
     files = [x.replace('/store/','') for x in jsn['files']]
     module_name = ''
     if 'HIPM_UL2016' in sample:
@@ -140,7 +126,7 @@ for sample in sorted(cfg['jsons']):
     cmd.extend(['--out-dir','.'])
     cmd.extend(['@inputfiles'])
     print("\n\n\n")
-    print("Command to execute:", cmd)
+    print(("Command to execute:", cmd))
     print("\n\n\n")
     skim_wf = Workflow(
         label=sample.replace('-','_'),
