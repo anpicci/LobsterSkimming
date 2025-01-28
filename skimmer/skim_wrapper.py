@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import subprocess
 import sys
 import os
@@ -23,7 +24,7 @@ indent = " "*4*2
 s = ["Current working directory:"]
 for f in os.listdir('.'):
     s.append(indent + "{}".format(f))
-print "\n".join(s)
+print("\n".join(s))
 
 # This is going to be our last resort...
 local_files = []
@@ -36,11 +37,11 @@ for inf in infiles:
         continue
     cmd_args = ['xrdcp','-f',inf,local_name]
     s = "Copy command: {}".format(" ".join(cmd_args))
-    print s
+    print(s)
     subprocess.check_call(cmd_args)
 
 s = "Sleeping..."
-print s
+print(s)
 time.sleep(10)
 
 to_skim = local_files
@@ -55,18 +56,18 @@ if nevents:
     cmd_args.extend(['-n','{}'.format(nevents)])
 
 s = "Skim command: {}".format(" ".join(cmd_args))
-print s
+print(s)
 subprocess.check_call(cmd_args)
 
 s = "Sleeping..."
-print s
+print(s)
 time.sleep(10)
  
 s = ["Current working directory:"]
-print s
+print(s)
 for f in os.listdir('.'):
     s.append(indent + "{}".format(f))
-print "\n".join(s)
+print("\n".join(s))
 
 # Need to merge any skim outputs into a single file that lobster expects
 to_merge = [ x.rsplit("/")[-1].replace(".root","_Skim.root") for x in to_skim ]
@@ -75,6 +76,6 @@ to_merge = [ x.rsplit("/")[-1].replace(".root","_Skim.root") for x in to_skim ]
 cmd_args = ['haddnano.py','output.root']
 cmd_args.extend(to_merge)
 s = "Merge command: {}".format(" ".join(cmd_args))
-print s
+print(s)
 subprocess.check_call(cmd_args)
 
