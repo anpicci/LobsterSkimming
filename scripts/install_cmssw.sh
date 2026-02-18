@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Usage: ./install_cmssw.sh <install-dir> <cmssw-version> <scram-arch>
+# Usage:
+# ./install_cmssw.sh <install-dir> <cmssw-version> <scram-arch> <cmgtools-url> <cmgtools-branch> <nanoaodtools-url> <nanoaodtools-branch>
 
 set -euo pipefail
 
@@ -7,6 +8,10 @@ setup_cmssw() {
     local dir="$1"
     local cmssw_ver="$2"
     local scram_arch="$3"
+    local cmgtools_url="$4"
+    local cmgtools_branch="$5"
+    local nanoaodtools_url="$6"
+    local nanoaodtools_branch="$7"
 
     cd "${dir}" || { echo "ERROR: directory '${dir}' does not exist"; return 1; }
 
@@ -21,10 +26,11 @@ setup_cmssw() {
     echo "dir: ${dir}"
     echo "cmssw_release: ${cmssw_ver}"
     echo "SCRAM_ARCH: ${scram_arch}"
+    echo "CMGTools source: ${cmgtools_url} (${cmgtools_branch:-default branch})"
+    echo "NanoAODTools source: ${nanoaodtools_url} (${nanoaodtools_branch:-default branch})"
 
     if [[ -d "${cvmfs_dir}" ]]; then
         echo "Found CVMFS!"
-        # Makes cmsrel available to the environment
         # shellcheck source=/dev/null
         source "${cvmfs_dir}/cmsset_default.sh"
     else
@@ -38,10 +44,19 @@ setup_cmssw() {
     scram p CMSSW "${cmssw_ver}"
 
     cd "${cmssw_ver}/src"
-    #git clone git@github.com:sscruz/cmgtools-lite.git -b 104X_dev_nano_lepMVA CMGTools
-    #git clone https://github.com/jdelrieg/topEFT_ttHMVA_Run3.git -b newcmgtools_python3 CMGTools
-    git clone https://github.com/anpicci/topEFT_ttHMVA_Run3.git -b nd_run3 CMGTools
-    #git clone https://github.com/cms-nanoAOD/nanoAOD-tools.git PhysicsTools/NanoAODTools
+
+    if [[ -n "${cmgtools_branch}" ]]; then
+        git clone "${cmgtools_url}" -b "${cmgtools_branch}" CMGTools
+    else
+        git clone "${cmgtools_url}" CMGTools
+    fi
+
+    mkdir -p PhysicsTools
+    if [[ -n "${nanoaodtools_branch}" ]]; then
+        git clone "${nanoaodtools_url}" -b "${nanoaodtools_branch}" PhysicsTools/NanoAODTools
+    else
+        git clone "${nanoaodtools_url}" PhysicsTools/NanoAODTools
+    fi
 
     echo "Getting CMS ENV from ${PWD}"
     eval "$(scramv1 runtime -sh)"
