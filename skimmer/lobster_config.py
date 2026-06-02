@@ -35,7 +35,6 @@ SRC_LOCAL = "/cms/cephfs/data"
 DST_REMOTE = "cmsxrootd.crc.nd.edu"
 DST_LOCAL = "/cms/cephfs/data"
 WORKDIR_BASE = "/tmpscratch/users/$USER"
-SANDBOX_RELEASE = "CMSSW_14_0_6"
 
 # Fallback profile defaults (used if markdown file is absent)
 PROFILES = {
@@ -43,11 +42,13 @@ PROFILES = {
         "year": "2018",
         "tag": "data/NAOD_ULv12_lepMVA-run2/2018",
         "cfg_name": "ND_UL18_background_samples.cfg",
+        "sandbox_release": "CMSSW_10_6_19_patch2",
     },
     "run3_mva_anpicci": {
         "year": "2022",
         "tag": "data/NAOD_ULv12_lepMVA-run3/2022",
         "cfg_name": "ND_2022_background_samples.cfg",
+        "sandbox_release": "CMSSW_14_0_6",
     },
 }
 
@@ -122,6 +123,7 @@ profile_cfg = PROFILES[ACTIVE_PROFILE]
 YEAR = profile_cfg["year"]
 TAG = profile_cfg["tag"]
 CFG_NAME = profile_cfg["cfg_name"]
+SANDBOX_RELEASE = profile_cfg["sandbox_release"]
 
 
 # =============================================================================

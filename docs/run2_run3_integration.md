@@ -23,6 +23,13 @@ The script loads profile defaults from:
 - Built-in `PROFILES` dict (fallback)
 - `skimmer/lobster_profiles.md` (if present)
 
+Each runtime profile includes:
+
+- `year`
+- `tag`
+- `cfg_name`
+- `sandbox_release`
+
 ## Setup configuration
 
 In `setup.py`, set `ACTIVE_SETUP_PROFILE` to choose the setup preset.

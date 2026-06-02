@@ -63,6 +63,12 @@ Key embedded knobs include:
 - `MATCH`
 - `SRC_REMOTE`, `SRC_LOCAL`, `DST_REMOTE`, `DST_LOCAL`
 - `WORKDIR_BASE`
-- `SANDBOX_RELEASE`
+
+Each runtime profile provides:
+
+- `year`
+- `tag`
+- `cfg_name`
+- `sandbox_release`
 
 The `step`, `tag`, and `ver` variables are used to define output and work directory names. If `TESTING=True` in `skimmer/lobster_config.py`, output paths are redirected to a timestamped test location.
