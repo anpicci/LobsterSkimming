@@ -60,6 +60,8 @@ Key embedded knobs include:
 - `ACTIVE_PROFILE`
 - `INPUT_MODE`
 - `STEP`
+- `TYPE`
+- `TARGET`
 - `MATCH`
 - `SRC_REMOTE`, `SRC_LOCAL`, `DST_REMOTE`, `DST_LOCAL`
 - `WORKDIR_BASE`
@@ -67,8 +69,14 @@ Key embedded knobs include:
 Each runtime profile provides:
 
 - `year`
+- `step`
+- `type`
+- `target`
 - `tag`
 - `cfg_name`
 - `sandbox_release`
+- `default_module`
 
 The `step`, `tag`, and `ver` variables are used to define output and work directory names. If `TESTING=True` in `skimmer/lobster_config.py`, output paths are redirected to a timestamped test location.
+
+See `docs/run3_lobster_config_compatibility.md` for the compatibility checklist against the latest Run3 lobster config.

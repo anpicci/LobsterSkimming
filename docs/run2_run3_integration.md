@@ -26,9 +26,13 @@ The script loads profile defaults from:
 Each runtime profile includes:
 
 - `year`
+- `step`
+- `type`
+- `target`
 - `tag`
 - `cfg_name`
 - `sandbox_release`
+- `default_module`
 
 ## Setup configuration
 
