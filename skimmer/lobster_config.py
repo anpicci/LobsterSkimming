@@ -31,11 +31,11 @@ PROTOCOL_LOCAL = "file://"
 PROTOCOL_REMOTE = "root://"
 
 TARGET = "CR"  # impacts the inclusion of the two-lepton veto in the skim cut
-YEAR = "2016APV"  # used for labeling and module selection; does not affect input dataset selection
+YEAR = ""  # optional campaign filter; empty string keeps all valid Run 2 sample years
 STEP = "skimmed"
 TYPE = "background"
-TAG = f"{TYPE}/NAOD_ULv9_lepMVA-run2/{YEAR}"
-# CFG_NAME = f"ND_{YEAR}_{TYPE}_samples.cfg" if TYPE != "data" else f"{YEAR}_data.cfg"
+TAG = f"{TYPE}/NAOD_ULv9_lepMVA-run2"
+# Select the cfg explicitly; YEAR is only an optional filter after cfg loading.
 CFG_NAME = "mc_background_samples.cfg"
 
 
@@ -69,6 +69,8 @@ DBS_DATA_TIERS = {
     "AODSIM",
     "USER",
 }
+
+RUN2_YEARS = ("2016APV", "2016", "2017", "2018")
 
 
 def remove_whitespace(expr):
@@ -167,17 +169,135 @@ def build_skim_cut(target):
     return skim_cut
 
 
-def select_module_name(sample):
-    if "HIPM_UL2016" in sample or "16APV" in sample:
-        return "lepMVA_2016APV"
-    if "UL2017" in sample or "UL17" in sample:
-        return "lepMVA_2017"
-    if "UL2018" in sample or "UL18" in sample:
-        return "lepMVA_2018"
-    if "2022" in sample or "2023" in sample:
-        return "lepMVA"
+def normalize_sample_year(value):
+    if not isinstance(value, str):
+        raise ValueError(f"sample year must be a string, got: {type(value).__name__}")
 
-    return "lepMVA_2016"
+    text = value.strip()
+    if not text:
+        raise ValueError("sample year is missing or empty")
+
+    upper = text.upper()
+    if upper == "2016APV":
+        return "2016APV"
+    if text in ("2016", "2017", "2018"):
+        return text
+
+    raise ValueError(
+        f"sample year {value!r} is not a supported Run 2 year; "
+        f"expected one of {', '.join(RUN2_YEARS)}"
+    )
+
+
+def normalize_year_filter(year):
+    if not isinstance(year, str):
+        raise ValueError(f"YEAR must be a string, got: {type(year).__name__}")
+
+    text = year.strip()
+    if not text:
+        return None
+    if text.lower() == "multi-year":
+        raise ValueError("YEAR='multi-year' is not supported; use YEAR='' for no year filter")
+
+    try:
+        return normalize_sample_year(text)
+    except ValueError as err:
+        raise ValueError(
+            f"YEAR={year!r} is not a supported Run 2 campaign filter; "
+            f"use '' or one of {', '.join(RUN2_YEARS)}"
+        ) from err
+
+
+def get_sample_year(sample, jsn, cfg_name):
+    if "year" not in jsn:
+        available_keys = ", ".join(sorted(str(key) for key in jsn.keys()))
+        raise ValueError(
+            f"Sample {sample!r} in cfg {cfg_name!r} is missing required JSON key 'year'; "
+            f"available keys=[{available_keys}]"
+        )
+
+    try:
+        return normalize_sample_year(jsn["year"])
+    except ValueError as err:
+        raise ValueError(
+            f"Sample {sample!r} in cfg {cfg_name!r} has invalid JSON year {jsn.get('year')!r}: {err}"
+        ) from err
+
+
+def year_counts(sample_years_by_sample, samples=None):
+    selected = samples if samples is not None else sample_years_by_sample
+    counts = dict((year, 0) for year in RUN2_YEARS)
+    for sample in selected:
+        counts[sample_years_by_sample[sample]] += 1
+    return counts
+
+
+def print_year_counts(title, counts):
+    print(title)
+    for year in RUN2_YEARS:
+        print(f"  {year}: {counts.get(year, 0)}")
+
+
+def validate_campaign_year_filter(year_filter, sample_years_by_sample, cfg_name):
+    if not sample_years_by_sample:
+        raise ValueError(f"No active JSON samples were selected from cfg {cfg_name!r}")
+    if year_filter is None:
+        return
+    if year_filter not in RUN2_YEARS:
+        raise ValueError(
+            f"Unsupported normalized year filter {year_filter!r}; expected one of {', '.join(RUN2_YEARS)}"
+        )
+
+
+def filter_cfg_jsons_by_year(cfg_jsons, year_filter, cfg_name):
+    sample_years_by_sample = {
+        sample: get_sample_year(sample, jsn, cfg_name)
+        for sample, jsn in cfg_jsons.items()
+    }
+    validate_campaign_year_filter(year_filter, sample_years_by_sample, cfg_name)
+
+    before_counts = year_counts(sample_years_by_sample)
+    campaign_year_filter_label = year_filter if year_filter is not None else "all"
+    print(f"Campaign year filter: {campaign_year_filter_label}")
+    print_year_counts("Observed sample years before filtering:", before_counts)
+
+    if year_filter is None:
+        filtered_jsons = dict(cfg_jsons)
+    else:
+        filtered_jsons = {
+            sample: jsn
+            for sample, jsn in cfg_jsons.items()
+            if sample_years_by_sample[sample] == year_filter
+        }
+        if not filtered_jsons:
+            raise ValueError(
+                f"YEAR={year_filter!r} removed every sample from cfg {cfg_name!r}; "
+                "choose a year present in the selected cfg or use YEAR='' for no year filter"
+            )
+
+    filtered_years_by_sample = {
+        sample: sample_years_by_sample[sample]
+        for sample in filtered_jsons
+    }
+    print_year_counts(
+        "Selected sample years after filtering:",
+        year_counts(filtered_years_by_sample),
+    )
+    print(f"Selected samples after year filtering: {len(filtered_jsons)} of {len(cfg_jsons)}")
+    return filtered_jsons, filtered_years_by_sample
+
+
+def select_module_name(sample, sample_year):
+    if sample_year == "2016APV":
+        return "lepMVA_2016APV"
+    if sample_year == "2017":
+        return "lepMVA_2017"
+    if sample_year == "2018":
+        return "lepMVA_2018"
+    if sample_year == "2016":
+        return "lepMVA_2016"
+
+    raise ValueError(f"Unsupported sample_year {sample_year!r} for sample {sample!r}")
 
 
 def build_payload_command(wrapper, skim_cut, module_name, out_dir):
@@ -328,6 +448,12 @@ def decide_sample_input_mode(sample, jsn, input_mode):
     raise ValueError(f"INPUT_MODE must be 'dbs', 'files', or 'auto', got: {input_mode!r}")
 
 
+def sample_input_mode_reason(input_mode, sample_input_mode):
+    if sample_input_mode == "dbs":
+        return "dbs_path"
+    return "files_fallback"
+
+
 # =============================================================================
 # VALIDATION
 # =============================================================================
@@ -335,6 +461,9 @@ def decide_sample_input_mode(sample, jsn, input_mode):
 INPUT_MODE = INPUT_MODE.strip().lower()
 if INPUT_MODE not in ("dbs", "files", "auto"):
     raise ValueError(f"INPUT_MODE must be 'dbs', 'files', or 'auto', got: {INPUT_MODE!r}")
+
+YEAR = YEAR.strip()
+year_filter = normalize_year_filter(YEAR)
 
 TARGET = TARGET.strip().upper()
 if TARGET not in ("SR", "CR"):
@@ -418,8 +547,14 @@ storage_files = StorageConfiguration(
 
 skim_cut = build_skim_cut(TARGET)
 
-print(f"INPUT_MODE = {INPUT_MODE}")
-print(f"TARGET = {TARGET}")
+print("Resolved Run 2 Lobster input configuration:")
+print(f"  INPUT_MODE = {INPUT_MODE}")
+print(f"  CFG_NAME = {CFG_NAME}")
+print(f"  YEAR = {YEAR}")
+print(f"  year_filter = {year_filter if year_filter is not None else 'all'}")
+print(f"  TYPE = {TYPE}")
+print(f"  TARGET = {TARGET}")
+print(f"  TAG = {TAG}")
 print(f"SRC_PREFIX_LOCAL = {SRC_PREFIX_LOCAL}")
 print(f"SRC_PREFIX_REMOTE = {SRC_PREFIX_REMOTE}")
 print(f"DST_PREFIX_LOCAL = {DST_PREFIX_LOCAL}")
@@ -440,6 +575,12 @@ assert_balanced_parentheses(skim_cut, "skim_cut")
 try:
     cfg = read_cfg(cfg_fpath, match=MATCH)
     print("cfg jsons:", list(cfg["jsons"].keys()))
+    cfg_jsons, sample_years_by_sample = filter_cfg_jsons_by_year(
+        cfg_jsons=cfg["jsons"],
+        year_filter=year_filter,
+        cfg_name=CFG_NAME,
+    )
+    print("selected cfg jsons:", list(sorted(cfg_jsons.keys())))
 
     cat = Category(
         name="processing",
@@ -454,22 +595,28 @@ try:
         "dbs": 0,
     }
 
-    for sample in sorted(cfg["jsons"]):
-        jsn = cfg["jsons"][sample]
+    for sample in sorted(cfg_jsons):
+        jsn = cfg_jsons[sample]
+        sample_year = sample_years_by_sample[sample]
+        print(
+            "Sample year decision: "
+            f"sample={sample} sample_year={sample_year} "
+            f"campaign_year_filter={year_filter if year_filter is not None else 'all'}"
+        )
         sample_input_mode = decide_sample_input_mode(sample, jsn, INPUT_MODE)
+        sample_reason = sample_input_mode_reason(INPUT_MODE, sample_input_mode)
         mode_counts[sample_input_mode] += 1
 
         print(f"Processing sample: {sample}")
-        print(f"  selected input mode: {sample_input_mode}")
+        print(
+            "Sample input mode decision: "
+            f"sample={sample} input_mode={sample_input_mode} reason={sample_reason}"
+        )
         print(f"  metadata summary: {metadata_summary(jsn)}")
 
         files = list(jsn["files"]) if sample_input_mode == "files" else []
 
-        if sample_input_mode == "files":
-            for fn in files:
-                print(f"  {fn}")
-
-        module_name = select_module_name(sample)
+        module_name = select_module_name(sample, sample_year)
 
         if sample_input_mode == "dbs":
             ds = cmssw.Dataset(
@@ -513,10 +660,6 @@ try:
 
         workflows.append(skim_wf)
 
-    print("Selected workflow input mode counts:")
-    print(f"  files: {mode_counts['files']}")
-    print(f"  dbs: {mode_counts['dbs']}")
-
 except Exception as err:
     print(
         "Error while setting up workflows. "
@@ -539,9 +682,6 @@ elif INPUT_MODE == "auto":
 else:
     raise ValueError(f"INPUT_MODE must be 'dbs', 'files', or 'auto', got: {INPUT_MODE!r}")
 
-print(f"Selected storage profile: {'files' if storage is storage_files else 'dbs'}")
-
-
 # =============================================================================
 # ADVANCED OPTIONS
 # =============================================================================
@@ -557,6 +697,12 @@ adv_kwargs = dict(
 
 if mode_counts["dbs"]:
     adv_kwargs["xrootd_servers"] = [SRC_REMOTE]
+
+print("Selected workflow input mode counts:")
+print(f"  files: {mode_counts['files']}")
+print(f"  dbs: {mode_counts['dbs']}")
+print(f"Selected storage profile: {'files' if storage is storage_files else 'dbs'}")
+print(f"xrootd_servers enabled: {str('xrootd_servers' in adv_kwargs).lower()}")
 
 
 config = Config(
