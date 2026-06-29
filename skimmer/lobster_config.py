@@ -22,7 +22,7 @@ TESTING = False
 #   "dbs"   -> cmssw.Dataset(dataset=..., file_based=True) + advanced.xrootd_servers
 #   "files" -> Dataset(files=...) + StorageConfiguration(input=[root://...//])
 #   "auto"  -> per-sample choice: DBS-style path when available, files otherwise
-INPUT_MODE = "files"
+INPUT_MODE = "auto"
 
 # Choose one protocol:
 #   "root://"  # used for remote XRootD paths
@@ -33,12 +33,12 @@ PROTOCOL_REMOTE = "root://"
 TARGET = "CR"  # impacts the inclusion of the two-lepton veto in the skim cut
 YEAR = ""  # optional campaign filter; empty string keeps all valid Run 2 sample years
 STEP = "skimmed"
-TYPE = "data"
+TYPE = "background"  # used for labeling and output path; does not affect skim cut
 TAG = f"{TYPE}/NAOD_ULv9_lepMVA-run2"
 # Select the cfg explicitly; YEAR is only an optional filter after cfg loading.
-# CFG_NAME = "mc_background_samples.cfg"
-CFG_NAME = "data_samples.cfg"
+CFG_NAME = "mc_background_samples.cfg"
 # CFG_NAME = "mc_signal_samples.cfg"
+# CFG_NAME = "data_samples.cfg"
 
 # Empty list matches everything.
 # For first retry, strongly consider something like:
