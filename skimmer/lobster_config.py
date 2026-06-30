@@ -116,15 +116,32 @@ def normalize_campaign_type(type_value):
     return normalized_type
 
 
-def classify_cfg_name(cfg_name):
+def cfg_name_tokens(cfg_name):
     cfg_basename = os.path.basename(str(cfg_name)).lower()
-    if "data" in cfg_basename:
-        return "data"
-    if "background" in cfg_basename or "bkg" in cfg_basename:
-        return "background"
-    if "signal" in cfg_basename or "sig" in cfg_basename:
-        return "signal"
-    return "unknown"
+    cfg_stem = os.path.splitext(cfg_basename)[0]
+    return {
+        token
+        for token in re.split(r"[^a-z0-9]+", cfg_stem)
+        if token
+    }
+
+
+def classify_cfg_name(cfg_name):
+    tokens = cfg_name_tokens(cfg_name)
+    matching_kinds = []
+
+    if "data" in tokens:
+        matching_kinds.append("data")
+    if tokens.intersection({"background", "bkg"}):
+        matching_kinds.append("background")
+    if tokens.intersection({"signal", "sig"}):
+        matching_kinds.append("signal")
+
+    if len(matching_kinds) > 1:
+        return "ambiguous"
+    if not matching_kinds:
+        return "unknown"
+    return matching_kinds[0]
 
 
 def validate_type_cfg_consistency(type_value, cfg_name, allow_mismatch=False):
@@ -136,8 +153,17 @@ def validate_type_cfg_consistency(type_value, cfg_name, allow_mismatch=False):
             "Inconsistent Run 2 campaign identity: "
             f"TYPE={type_value!r} but CFG_NAME={cfg_name!r} has cfg kind {cfg_kind!r}. "
             "Refusing to derive TAG/workdir/plotdir/output paths. Use a cfg name "
-            "containing 'data', 'background', or 'signal'; "
+            "containing a 'data', 'background', 'bkg', 'signal', or 'sig' token; "
             "ALLOW_TYPE_CFG_MISMATCH does not permit unknown cfg kinds."
+        )
+
+    if cfg_kind == "ambiguous":
+        raise ValueError(
+            "Inconsistent Run 2 campaign identity: "
+            f"TYPE={type_value!r} but CFG_NAME={cfg_name!r} has cfg kind {cfg_kind!r} "
+            "because more than one campaign marker was found. "
+            "Refusing to derive TAG/workdir/plotdir/output paths. "
+            "ALLOW_TYPE_CFG_MISMATCH does not permit ambiguous cfg kinds."
         )
 
     if cfg_kind != normalized_type and not allow_mismatch:
