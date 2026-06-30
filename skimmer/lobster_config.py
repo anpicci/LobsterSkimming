@@ -34,11 +34,11 @@ TARGET = "CR"  # impacts the inclusion of the two-lepton veto in the skim cut
 YEAR = ""  # optional campaign filter; empty string keeps all valid Run 2 sample years
 STEP = "skimmed"
 TYPE = "background"  # used for labeling and output path; does not affect skim cut
-TAG = f"{TYPE}/NAOD_ULv9_lepMVA-run2"
 # Select the cfg explicitly; YEAR is only an optional filter after cfg loading.
 CFG_NAME = "mc_background_samples.cfg"
 # CFG_NAME = "mc_signal_samples.cfg"
 # CFG_NAME = "data_samples.cfg"
+ALLOW_TYPE_CFG_MISMATCH = False
 
 # Empty list matches everything.
 # For first retry, strongly consider something like:
@@ -104,6 +104,52 @@ def assert_no_literal_outer_quotes(expr, label):
             f"{label} starts and ends with literal quote characters. "
             f"Do not include shell quotes in the Lobster argument value: {expr!r}"
         )
+
+
+def normalize_campaign_type(type_value):
+    normalized_type = str(type_value).strip().lower()
+    allowed_types = {"data", "background", "signal"}
+    if normalized_type not in allowed_types:
+        raise ValueError(
+            f"Invalid TYPE={type_value!r}; expected one of {sorted(allowed_types)}"
+        )
+    return normalized_type
+
+
+def classify_cfg_name(cfg_name):
+    cfg_basename = os.path.basename(str(cfg_name)).lower()
+    if "data" in cfg_basename:
+        return "data"
+    if "background" in cfg_basename or "bkg" in cfg_basename:
+        return "background"
+    if "signal" in cfg_basename or "sig" in cfg_basename:
+        return "signal"
+    return "unknown"
+
+
+def validate_type_cfg_consistency(type_value, cfg_name, allow_mismatch=False):
+    normalized_type = normalize_campaign_type(type_value)
+    cfg_kind = classify_cfg_name(cfg_name)
+
+    if cfg_kind == "unknown":
+        raise ValueError(
+            "Inconsistent Run 2 campaign identity: "
+            f"TYPE={type_value!r} but CFG_NAME={cfg_name!r} has cfg kind {cfg_kind!r}. "
+            "Refusing to derive TAG/workdir/plotdir/output paths. Use a cfg name "
+            "containing 'data', 'background', or 'signal'; "
+            "ALLOW_TYPE_CFG_MISMATCH does not permit unknown cfg kinds."
+        )
+
+    if cfg_kind != normalized_type and not allow_mismatch:
+        raise ValueError(
+            "Inconsistent Run 2 campaign identity: "
+            f"TYPE={type_value!r} but CFG_NAME={cfg_name!r} has cfg kind {cfg_kind!r}. "
+            "Refusing to derive TAG/workdir/plotdir/output paths. "
+            f"Set TYPE to {cfg_kind!r}, choose a matching cfg, or explicitly set "
+            "ALLOW_TYPE_CFG_MISMATCH=True."
+        )
+
+    return normalized_type, cfg_kind
 
 
 def build_skim_cut(target):
@@ -470,11 +516,18 @@ TARGET = TARGET.strip().upper()
 if TARGET not in ("SR", "CR"):
     raise ValueError(f"TARGET must be 'SR' or 'CR', got: {TARGET!r}")
 
+CAMPAIGN_TYPE, CFG_KIND = validate_type_cfg_consistency(
+    TYPE,
+    CFG_NAME,
+    allow_mismatch=ALLOW_TYPE_CFG_MISMATCH,
+)
+
 
 # =============================================================================
 # DERIVED PATHS / LABELS
 # =============================================================================
 
+TAG = f"{CAMPAIGN_TYPE}/NAOD_ULv9_lepMVA-run2"
 TSTAMP1 = datetime.datetime.now().strftime("%Y%m%d_%H%M")
 startingday = datetime.datetime.now().strftime("%y%m%d")
 ver = f"v{startingday}"
@@ -554,6 +607,8 @@ print(f"  CFG_NAME = {CFG_NAME}")
 print(f"  YEAR = {YEAR}")
 print(f"  year_filter = {year_filter if year_filter is not None else 'all'}")
 print(f"  TYPE = {TYPE}")
+print(f"  cfg_kind = {CFG_KIND}")
+print(f"  allow_type_cfg_mismatch = {ALLOW_TYPE_CFG_MISMATCH}")
 print(f"  TARGET = {TARGET}")
 print(f"  TAG = {TAG}")
 print(f"SRC_PREFIX_LOCAL = {SRC_PREFIX_LOCAL}")
